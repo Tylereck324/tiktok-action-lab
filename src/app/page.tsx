@@ -1,13 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Zap, History, User, CheckCircle2, Loader2, Play, LayoutGrid } from "lucide-react";
+import { User, CheckCircle2, Loader2, LayoutGrid } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ActionPlanResult } from "@/types/action-lab";
+import { StatsBento } from "@/components/dashboard/stats-bento";
+import { ActionPlanCard } from "@/components/dashboard/action-plan-card";
+import { MobileNav } from "@/components/layout/mobile-nav";
 
 export default function Home() {
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<ActionPlanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleTransmute = async () => {
@@ -27,8 +31,9 @@ export default function Home() {
       if (!response.ok) throw new Error(data.error || "Failed to build action plan");
       
       setResult(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to build action plan";
+      setError(message);
     } finally {
       setIsLoading(false);
     }
@@ -89,69 +94,13 @@ export default function Home() {
         )}
       </section>
 
-      {/* Bento Stats */}
-      <div className="grid grid-cols-2 gap-4">
-        <motion.div 
-          whileHover={{ y: -4 }}
-          className="bg-[#f9fafb] border border-[#e5e7eb] rounded-[1.5rem] p-6 flex flex-col justify-between aspect-square"
-        >
-          <p className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Processed</p>
-          <div className="space-y-1">
-            <h3 className="text-5xl font-bold">{result ? "143" : "142"}</h3>
-            <p className="text-[10px] text-green-600 font-bold tracking-tight uppercase">+13 since Monday</p>
-          </div>
-        </motion.div>
-        <motion.div 
-          whileHover={{ y: -4 }}
-          className="bg-[#f9fafb] border border-[#e5e7eb] rounded-[1.5rem] p-6 flex flex-col justify-between aspect-square"
-        >
-          <p className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Credits</p>
-          <div className="space-y-3">
-            <h3 className="text-5xl font-bold">{result ? "84" : "85"}<span className="text-xl text-gray-200">/100</span></h3>
-            <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
-              <motion.div 
-                initial={{ width: "85%" }}
-                animate={{ width: result ? "84%" : "85%" }}
-                className="bg-black h-full"
-              />
-            </div>
-          </div>
-        </motion.div>
-      </div>
+      {/* Bento Stats Component */}
+      <StatsBento processedCount={result ? 143 : 142} credits={result ? 84 : 85} />
 
       {/* Result / Activity Toggle */}
       <AnimatePresence mode="wait">
         {result ? (
-          <motion.section 
-            key="result"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="space-y-4"
-          >
-            <div className="flex justify-between items-end px-1">
-              <p className="text-[10px] uppercase tracking-widest font-bold text-black">New Action Plan</p>
-              <button onClick={() => setResult(null)} className="text-[10px] font-bold text-gray-400 hover:text-black uppercase tracking-widest">Reset</button>
-            </div>
-            <div className="bg-black text-white p-6 rounded-[1.5rem] shadow-xl space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                  <CheckCircle2 className="w-4 h-4 text-green-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold tracking-tight">{result.protocol}</p>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-widest">Blueprint Ready</p>
-                </div>
-              </div>
-              <div className="h-px bg-white/10 w-full" />
-              <p className="text-xs leading-relaxed text-gray-400">
-                Extracted from video: <span className="text-white italic">"{result.raw.substring(0, 40)}..."</span>
-              </p>
-              <button className="w-full bg-white text-black py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-gray-100 transition-colors">
-                View Full Protocol
-              </button>
-            </div>
-          </motion.section>
+          <ActionPlanCard result={result} onReset={() => setResult(null)} />
         ) : (
           <motion.section 
             key="history"
@@ -174,7 +123,7 @@ export default function Home() {
                 </div>
                 <CheckCircle2 className="w-4 h-4 text-green-500" />
               </div>
-              <div className="flex items-center gap-4 p-4 rounded-2xl border border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm transition-all cursor-pointer group">
+              <div className="flex items-center gap-4 p-4 rounded-2xl border border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm transition-all cursor-pointer group opacity-60">
                 <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center group-hover:bg-blue-100 transition-colors border border-blue-100/50">
                   <span className="text-lg">🧘</span>
                 </div>
@@ -189,21 +138,8 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* Nav */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md px-8 py-6 border-t border-gray-100 max-w-md mx-auto grid grid-cols-3 text-center shadow-lg shadow-black/5 rounded-t-3xl">
-        <button className="flex flex-col items-center gap-1.5 transition-transform active:scale-90">
-          <Zap className="w-5 h-5 text-black" />
-          <span className="text-[9px] font-black uppercase tracking-[0.15em] text-black">Dashboard</span>
-        </button>
-        <button className="flex flex-col items-center gap-1.5 opacity-20 transition-transform active:scale-90">
-          <History className="w-5 h-5 text-black" />
-          <span className="text-[9px] font-black uppercase tracking-[0.15em] text-black">History</span>
-        </button>
-        <button className="flex flex-col items-center gap-1.5 opacity-20 transition-transform active:scale-90">
-          <User className="w-5 h-5 text-black" />
-          <span className="text-[9px] font-black uppercase tracking-[0.15em] text-black">Profile</span>
-        </button>
-      </nav>
+      {/* Mobile Navigation Component */}
+      <MobileNav />
     </div>
   );
 }
