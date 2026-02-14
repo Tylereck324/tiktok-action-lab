@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter);
+}
+
+@layer base {
+  body {
+    @apply bg-white text-[#111827] antialiased;
+  }
+}
+
+.soft-card {
+  @apply bg-[#f9fafb] border border-[#e5e7eb] rounded-[1.5rem] transition-all duration-200;
+}
+
+.soft-card:hover {
+  @apply border-[#d1d5db] shadow-sm;
+}
