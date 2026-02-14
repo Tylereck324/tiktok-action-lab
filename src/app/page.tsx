@@ -1,18 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Zap, History, User, CheckCircle2, Loader2, Play } from "lucide-react";
+import { Zap, History, User, CheckCircle2, Loader2, Play, LayoutGrid } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Home() {
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleTransmute = async () => {
     if (!url) return;
     setIsLoading(true);
     setResult(null);
+    setError(null);
     
     try {
       const response = await fetch("/api/transmute", {
@@ -21,9 +23,12 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
       });
       const data = await response.json();
+      
+      if (!response.ok) throw new Error(data.error || "Failed to build action plan");
+      
       setResult(data);
-    } catch (error) {
-      console.error("Transmutation failed", error);
+    } catch (err: any) {
+      setError(err.message);
     } finally {
       setIsLoading(false);
     }
@@ -35,7 +40,7 @@ export default function Home() {
       <header className="flex justify-between items-center">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center shadow-lg shadow-black/5">
-            <Play className="w-4 h-4 text-white fill-white" />
+            <LayoutGrid className="w-4 h-4 text-white" />
           </div>
           <span className="font-bold text-lg tracking-tight uppercase">Action Lab</span>
         </div>
@@ -76,9 +81,12 @@ export default function Home() {
             className="absolute right-3 top-3 bottom-3 bg-black text-white px-5 rounded-xl text-xs font-bold hover:scale-[0.98] active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
           >
             {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-            {isLoading ? "Processing" : "Build Action Plan"}
+            {isLoading ? "Building" : "Build Action Plan"}
           </button>
         </div>
+        {error && (
+          <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider ml-2">{error}</p>
+        )}
       </section>
 
       {/* Bento Stats */}
@@ -89,8 +97,8 @@ export default function Home() {
         >
           <p className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Processed</p>
           <div className="space-y-1">
-            <h3 className="text-5xl font-bold">142</h3>
-            <p className="text-[10px] text-green-600 font-bold tracking-tight">+12 SINCE MONDAY</p>
+            <h3 className="text-5xl font-bold">{result ? "143" : "142"}</h3>
+            <p className="text-[10px] text-green-600 font-bold tracking-tight uppercase">+13 since Monday</p>
           </div>
         </motion.div>
         <motion.div 
@@ -99,11 +107,11 @@ export default function Home() {
         >
           <p className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Credits</p>
           <div className="space-y-3">
-            <h3 className="text-5xl font-bold">85<span className="text-xl text-gray-200">/100</span></h3>
+            <h3 className="text-5xl font-bold">{result ? "84" : "85"}<span className="text-xl text-gray-200">/100</span></h3>
             <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
               <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: "85%" }}
+                initial={{ width: "85%" }}
+                animate={{ width: result ? "84%" : "85%" }}
                 className="bg-black h-full"
               />
             </div>
@@ -123,21 +131,24 @@ export default function Home() {
           >
             <div className="flex justify-between items-end px-1">
               <p className="text-[10px] uppercase tracking-widest font-bold text-black">New Action Plan</p>
-              <button onClick={() => setResult(null)} className="text-[10px] font-bold text-gray-400 hover:text-black">Reset</button>
+              <button onClick={() => setResult(null)} className="text-[10px] font-bold text-gray-400 hover:text-black uppercase tracking-widest">Reset</button>
             </div>
             <div className="bg-black text-white p-6 rounded-[1.5rem] shadow-xl space-y-4">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
                   <CheckCircle2 className="w-4 h-4 text-green-400" />
                 </div>
-                <p className="text-sm font-bold tracking-tight">Blueprint Successfully Extracted</p>
+                <div>
+                  <p className="text-sm font-bold tracking-tight">{result.protocol}</p>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-widest">Blueprint Ready</p>
+                </div>
               </div>
               <div className="h-px bg-white/10 w-full" />
-              <p className="text-xs leading-relaxed opacity-70 italic font-medium">
-                The full guide and protocol have been sent to your primary vault.
+              <p className="text-xs leading-relaxed text-gray-400">
+                Extracted from video: <span className="text-white italic">"{result.raw.substring(0, 40)}..."</span>
               </p>
               <button className="w-full bg-white text-black py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-gray-100 transition-colors">
-                Open Full Blueprint
+                View Full Protocol
               </button>
             </div>
           </motion.section>
@@ -163,7 +174,7 @@ export default function Home() {
                 </div>
                 <CheckCircle2 className="w-4 h-4 text-green-500" />
               </div>
-              <div className="flex items-center gap-4 p-4 rounded-2xl border border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm transition-all cursor-pointer group opacity-60">
+              <div className="flex items-center gap-4 p-4 rounded-2xl border border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm transition-all cursor-pointer group">
                 <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center group-hover:bg-blue-100 transition-colors border border-blue-100/50">
                   <span className="text-lg">🧘</span>
                 </div>
@@ -179,7 +190,7 @@ export default function Home() {
       </AnimatePresence>
 
       {/* Nav */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md px-8 py-6 border-t border-gray-100 max-w-md mx-auto grid grid-cols-3 text-center">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md px-8 py-6 border-t border-gray-100 max-w-md mx-auto grid grid-cols-3 text-center shadow-lg shadow-black/5 rounded-t-3xl">
         <button className="flex flex-col items-center gap-1.5 transition-transform active:scale-90">
           <Zap className="w-5 h-5 text-black" />
           <span className="text-[9px] font-black uppercase tracking-[0.15em] text-black">Dashboard</span>
